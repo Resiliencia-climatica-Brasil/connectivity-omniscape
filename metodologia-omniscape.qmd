@@ -17,6 +17,8 @@ Consideramos o uso de _kernel_ sobre a superfície de resistência como entrada 
 O _output_ do Omniscape são três arquivos de conectividade relacionados:
 
 + `flow_current` é o fluxo que aconteceria sem levar em conta a camada de resistência. Ele leva em conta a configuração espacial da paisagem (estreitos, barras) e dos pixels de baixa resistência de origem. Nem todo pixel é _source_ pixel, mas a corrente que entra em cada pixel de baixa resistência entra sem resistência. Flow current é usado como um "modelo nulo" de conectividade.
-+ `cumulative_current` é a corrente acumulada, levando em conta a configuração espacial e os valores de resistência.
++ `cummulative_current` é a corrente acumulada, levando em conta a configuração espacial e os valores de resistência.
 + `normalized_current` equivale a $\frac{cumulative\_current}{flow\_current}$
 e controla o efeito da configuração espacial do cálculo de conectividade.
+
+Como é uma análise com uma demanda computacional alta, recortamos regiões de interesse em quadrados de 4.000 pixels para cada bioma e avaliamos os diversos cenários para melhor ajuste de parâmetros e tomadas de decisão, como utilizar `cumulative_current` ou `normalized_current` e utilizar a resistência ou a superfície gerada pelo _kernel_. 
