@@ -1,16 +1,14 @@
-## Metodologia
+## Conectividade: análise de circuitos
 
-## Conectividade regional
-
-Calculamos a conectividade regional baseada em teoria de circuitos [@mcrae_isolation_2006] utilizando a implementação de Omniscape para Julia [@hall_circuitscape_2021; @landau_omniscapejl_2021].
+Calculamos a conectividade baseada em teoria de circuitos [@mcrae_isolation_2006] utilizando a implementação de Omniscape para Julia [@hall_circuitscape_2021; @landau_omniscapejl_2021].
 
 Como base para estas análises, utilizamos:
 
 + o raster de resistência utilizado como base para a conectividade local;
-+ um raio da área de interesse de 210 pixels (~19km);
-+ agrupamentos de 21 pixels de interesse para a janela móvel (~1.9km).
++ um raio da área de interesse de 200 pixels (18km);
++ agrupamentos de 19 pixels de interesse para a janela móvel (~1.7km).
 
-O raio da área de interesse é o raio de busca ou tamanho da janela móvel circular. O tamanho da janela foi equivalente ao utilizado no cálculo dos Z scores (200 pixels), o valor é levemente diferente devido à limitação do tamanho do bloco central da janela ser um número ímpar de pixels (agrupamento de 21) e segundo @landau_omniscapejl_2021 esse valor não deve ultrapassar 10% do raio.
+O raio da área de interesse é o raio de busca ou tamanho da janela móvel circular. O tamanho da janela foi equivalente ao utilizado no cálculo dos  valores de Z (200 pixels), o valor é levemente diferente devido à limitação do tamanho do bloco central da janela ser um número ímpar de pixels (agrupamento de 19) e segundo @landau_omniscapejl_2021 esse valor não deve ultrapassar 10% do raio.
 
 Consideramos o uso de _kernel_ sobre a superfície de resistência como entrada para o Omniscape, entretanto, os resultados da análise com _kernel_ diluíram muito corredores e passagens menores, por conta da natureza de suavização da superfície de resistência pelo _kernel_. Dessa maneira, ao utilizar a resistência sem _kernel_ como entrada, preservamos estruturas espaciais menores, mas importantes para a conectividade da paisagem.
 
@@ -21,4 +19,4 @@ O _output_ do Omniscape são três arquivos de conectividade relacionados:
 + `normalized_current` equivale a $\frac{cumulative\_current}{flow\_current}$
 e controla o efeito da configuração espacial do cálculo de conectividade.
 
-Como é uma análise com uma demanda computacional alta, recortamos regiões de interesse em quadrados de 4.000 pixels para cada bioma e avaliamos os diversos cenários para melhor ajuste de parâmetros e tomadas de decisão, como utilizar `cumulative_current` ou `normalized_current` e utilizar a resistência ou a superfície gerada pelo _kernel_. 
+Devido à alta demanda computacional a superfície de resistência para todo o Brasil foi fragmentada em 9 tiles com sobreposição de 10 vezes raio (raio de 200 e sobreposição de 2000 pixels), após o processamento individual dos tiles foram removidos os 1000 pixels de cada borda sobreposta, eliminando o efeito de borda devido à fragmentação em tiles. Feito isso, é realizado o mosaico dos tiles, resultando na superfície de conectividade para todo o Brasil. Essa fragmentação para o processamento de grandes regiões é importante para que as análises possam ser feitas com menos poder computacional, sem prejuízo nos resultados. A determinação da dimensão de sobreposição dos tiles foi feita através da análise de efeito de borda, que se estendeu até 8-9 vezes o tamanho do raio, portanto por segurança foi utilizado o valor de 10 raios como sobreposição. Importante ressaltar que o efeito de borda decai rapidamente e é fraco a partir de 4 a 5 dimensões de raio.
