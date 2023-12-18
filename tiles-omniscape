@@ -1,7 +1,16 @@
+## Fragmentação da análise por TILES
+
+Aqui trazemos dois passos para fragmentar a análise em TILES:
+1 - recorte da camada de resistência em TILES
+2 - recorte das bordas dos TILES de conectividade
+São TILES diferentes, os primeiros serão gerados através do raster de resistência como entrada, já o segundo passo utilizará como entrada o resultado do Omniscape, portanto são TILES de conectividade. A descrição da análise se encontra na metodologia do Omniscape.
+
+## Recorte da resistência por TILES
+
 Abaixo segue o código em Python para a fragmentação do raster de resistência em TILES, caso necessário, para serem analisados individualmente pelo Omniscape.
 Os únicos parâmetros que precisam ser alterados estão marcados com (PREENCHER): caminho para o raster de resistência, pasta a serem salvos os TILES, número de TILES e sobreposição entre os TILES.
 
-# Instalar a biblioteca GDAL que criará os TILES
+# Instalar a biblioteca GDAL que criará os TILES de resistência
 
 # Importar a biblioteca GDAL
 from osgeo import gdal
@@ -48,3 +57,87 @@ def split_raster(input_raster, output_folder, num_tiles, overlap):
 
 # Execução da função de recorte por TILES
 split_raster(input_raster, output_folder, num_tiles, overlap)
+
+## Recorte do efeito de borda dos TILES de Conectividade do Omniscape
+
+Feita a análise de conectividade em cada TILE de resistência, teremos os rasters de conectividade correspondentes.
+Antes de ser feito o mosaico dos TILES de conectividade, é necessária a remoção das bordas de sobreposição de cada TILE, para isso utilizamos o código em Python abaixo.
+Neste código o preenchimento das entradas está ao final do código especificado com (PREENCHER).
+É importante se atentar a quais bordas tiveram sobreposição dos tiles, pois apenas essas terão os pixels de borda removidos.
+O exemplo abaixo recorta as bordas do primeiro TILE de conectividade no canto superior esquerdo, suas sobreposições estão na borda LESTE e na borda SUL, portanto, apenas pixels dessas bordas serão removidos. Cada TILE de conectividade terá bordas diferentes sobrepostas, utilizar o código com atenção.
+
+# Instalar a biblioteca rasterio
+pip install rasterio
+
+# Importar as bibliotecas necessárias
+import os
+import rasterio
+from rasterio.windows import from_bounds
+
+# Definir a função de corte dos tiles de conectividade
+def clip_raster(input_path, output_folder, pixels_to_cut):
+    # Abrir o raster de entrada
+    with rasterio.open(input_path) as src:
+        # Armazenar as coordenadas de canto do raster
+        bounds = src.bounds
+
+        # Calcular as novas coordenadas de canto do raster a ser cortado
+        new_left = bounds.left + pixels_to_cut['west'] * src.res[0]
+        new_bottom = bounds.bottom + pixels_to_cut['south'] * src.res[1]
+        new_right = bounds.right - pixels_to_cut['east'] * src.res[0]
+        new_top = bounds.top - pixels_to_cut['north'] * src.res[1]
+
+        # Criar uma janela com as coordenadas de canto para recortar as bordas
+        window = from_bounds(new_left, new_bottom, new_right, new_top, src.transform)
+
+        # Ler os dados dentro da janela criada
+        data = src.read(window=window)
+
+        # Atualizar os metadados com as novas dimenções e transformar
+        transform = src.window_transform(window)
+
+        meta = src.meta.copy()
+        meta.update({'width': window.width, 'height': window.height, 'transform': transform})
+
+    # Salvar o raster recortado na pasta de saída
+    output_path = os.path.join(output_folder, os.path.basename(input_path))
+    meta.update({'compress': 'lzw'})
+
+    # Explicitar o tipo de dado de saída
+    meta.update({'dtype': data.dtype.name})
+
+    # Escrever os dados no raster de saída
+    with rasterio.open(output_path, 'w', **meta) as dst:
+        dst.write(data)
+
+# Definir a função de cortar os rasters
+def batch_clip_rasters(input_rasters, output_folder, pixels_to_cut):
+    # Criar a pasta de saída caso não exista
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Fazer um loop executando a função em todos os rasters de entrada
+    for input_raster in input_rasters:
+        clip_raster(input_raster, output_folder, pixels_to_cut)
+
+if __name__ == "__main__":
+    # (PREENCHER) Especificar os rasters de entrada (TILES de conectividade)
+    input_rasters = [
+        'C:/omniscape/TILES_conectividade/tile_0_0.tif',
+        # Adicionar mais rasters se necessário (ATENÇÃO PARA O NÚMERO DE PIXELS DE BORDA AO FINAL SER DIFERENTE PARA CADA TILE)
+    ]
+
+    # (PREENCHER) Especificar a pasta onde os TILES sem borda serão salvos
+    output_folder = 'C:/omniscape/TILES_mosaico'
+
+    # (PREENCHER) Especificar o número de pixels a ser recortado de cada borda
+    pixels_to_cut = {
+        'north': 0,    # Número de pixels a serem recortados da borda NORTE
+        'south': 1000,     # Número de pixels a serem recortados da borda SUL
+        'east': 1000,      # Número de pixels a serem recortados da borda LESTE
+        'west': 0      # Número de pixels a serem recortados da borda OESTE
+    }
+
+    # Executar a função de recorte das bordas dos TILES de conectividade
+    batch_clip_rasters(input_rasters, output_folder, pixels_to_cut)
+
+Com isso temos os TILES de conectividade sem as bordas para então ser feito o mosaico. O mosaico, por praticidade, foi feito no QGIS pela ferramenta Merge (Mosaico): menu Raster > Miscelaneous (Miscelânea) > Merge (Mosaico), onde a entrada são os TILES de conectividade e como saída teremos o raster de conectividade para todo o Brasil.
