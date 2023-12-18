@@ -1,0 +1,50 @@
+Abaixo segue o código em Python para a fragmentação do raster de resistência em TILES, caso necessário, para serem analisados individualmente pelo Omniscape.
+Os únicos parâmetros que precisam ser alterados estão marcados com (PREENCHER): caminho para o raster de resistência, pasta a serem salvos os TILES, número de TILES e sobreposição entre os TILES.
+
+# Instalar a biblioteca GDAL que criará os TILES
+
+# Importar a biblioteca GDAL
+from osgeo import gdal
+
+# (PREENCHER) Caminho para o raster de resistência a ser fragmentado
+input_raster = "C:/omniscape/resistencia.tif"
+
+# (PREENCHER) Caminho da pasta em que os TILES serão salvos
+output_folder = "C:/omniscape/tiles"
+
+# (PREENCHER) Número de TILES a serem utilizados
+num_tiles = 9
+
+# (PREENCHER) Sobreposição entre os TILES (número de pixels)
+overlap = 2000
+
+# Definição da função de recorte por TILES
+def split_raster(input_raster, output_folder, num_tiles, overlap):
+    dataset = gdal.Open(input_raster)
+    band = dataset.GetRasterBand(1)
+    xsize = band.XSize
+    ysize = band.YSize
+    
+    tiles_per_side = int(num_tiles ** 0.5)  # Assuming a square division
+    
+    tile_size = int((xsize + (tiles_per_side - 1) * overlap) / tiles_per_side)
+    
+    for i in range(tiles_per_side):
+        for j in range(tiles_per_side):
+            x_offset = i * (tile_size - overlap)
+            y_offset = j * (tile_size - overlap)
+            
+            x_end = min(x_offset + tile_size, xsize)
+            y_end = min(y_offset + tile_size, ysize)
+            
+            output_path = f"{output_folder}/tile_{i}_{j}.tif"
+            
+            creation_options = ['COMPRESS=LZW']  # Add LZW compression
+            
+            gdal.Translate(output_path, dataset, srcWin=(x_offset, y_offset, x_end - x_offset, y_end - y_offset),
+                           creationOptions=creation_options)
+    
+    dataset = None
+
+# Execução da função de recorte por TILES
+split_raster(input_raster, output_folder, num_tiles, overlap)
