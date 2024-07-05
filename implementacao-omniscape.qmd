@@ -48,6 +48,8 @@ project_name=omniscape
 ---------------------------------------------------------
 
 ## 6 - Executar o comando abaixo utilizando o arquivo .ini previamente criado como argumento:
+$using Omniscape
+
 $run_omniscape("parametros.ini")
 
 ## Observações Importantes
